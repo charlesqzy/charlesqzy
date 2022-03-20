@@ -1,0 +1,229 @@
+options {
+    STATIC=false;
+    UNICODE_INPUT = true;
+}
+PARSER_BEGIN(ESQueryTransformer)
+package com.qzy.javacc.es;
+
+import java.io.Reader;
+import java.io.StringReader;
+
+public class  ESQueryTransformer{
+
+    public static String logicalToQueryString(String input){
+
+        Reader reader = new StringReader(input) ;
+        ESQueryTransformer transformer = new ESQueryTransformer(reader);
+        StringBuffer buffer = new StringBuffer();
+
+        try{
+            transformer.doTransform(buffer);
+        }catch ( TokenMgrError e){
+            e.printStackTrace();
+            throw new IllegalStateException();
+        }
+        catch ( ParseException e){
+            e.printStackTrace();
+            throw new IllegalStateException();
+        }
+        return buffer.toString();
+    }
+
+        public String dealQuote(String inString){
+            StringBuffer buffer = new StringBuffer();
+            String[] items = inString.split(",");
+            for(int i=0;i<items.length;i++){
+                String item = items[i];
+                if(item.startsWith("\'")){
+                    item = "\\\'" + item.substring(1,item.length() -1 ) + "\\\'";
+                }else if(item.startsWith("\"")){
+                    item = "\\\"" + item.substring(1,item.length() -1 ) + "\\\"";
+                }
+                if(i>0){
+                    buffer.append(",");
+                }
+                buffer.append(item);
+        }
+            return buffer.toString();
+    }
+
+    public static void main(String[] args){
+        String text = "trx_amt between 123 and 890 and (city not in (\"shanghai\",\"suzhou\") or trx_cnt <= 345 and trx_cnt != 334)";
+        String queryString = logicalToQueryString(text);
+        System.out.println(queryString);
+    }
+}
+PARSER_END(ESQueryTransformer)
+
+SKIP : {
+" "|"\r"|"\n"|"\r\n"|"\t"
+}
+TOKEN : {
+<BETWEEN : "BETWEEN"|"between">
+}
+TOKEN : {
+<IS : "IS"|"is">
+}
+TOKEN : {
+<NULL : "NULL"|"null">
+}
+TOKEN : {
+<NOT : "NOT"|"not">
+}
+TOKEN : {
+<IN : "IN"|"in">
+}
+TOKEN : {
+<COMMA:",">
+}
+TOKEN : {
+<LPAREN : "(">
+}
+TOKEN : {
+<RPAREN : ")">
+}
+TOKEN : {
+<AND : "AND"|"and"|"&&">
+}
+TOKEN : {
+<OR : "OR"|"or"|"||">
+}
+TOKEN : {
+<IDENTIFIER : <LETTER>(<LETTER> | <DIGIT>)*>
+}
+TOKEN : {
+<#LETTER : ["_","A"-"Z","a"-"z"]>
+}
+TOKEN : {
+<#DIGIT : ["0"-"9"]>
+}
+TOKEN : {
+<OPERATOR : ">"|"<"|"="|"<="|">="|"!=">
+}
+TOKEN : {
+<OPERAND : (<DIGIT>)+ | <SINGLE_QUOTE>(~[])+<SINGLE_QUOTE> |<DOUBLE_QUOTE>(~[])+<DOUBLE_QUOTE> >
+}
+TOKEN : {
+<#SINGLE_QUOTE : "\'">
+}
+TOKEN : {
+<#DOUBLE_QUOTE : "\"">
+}
+
+void doTransform(StringBuffer buffer) :
+{
+ String value;
+}
+{
+(
+value = expression()
+{buffer.append(value);}
+)*
+<EOF>
+}
+String expression():
+{
+    String value;
+    StringBuffer buffer = new StringBuffer();
+    Token t;
+}
+{
+    value = term()
+    { buffer.append(value); }
+    (
+    (t=<AND> | t=<OR>) value = term()
+    {
+       buffer.append(" " + t.image.toUpperCase() + " ");
+       buffer.append(value);
+    }
+    )*
+    {return buffer.toString();}
+}
+String term():
+{
+    String p;
+    String exp;
+    StringBuffer buffer = new StringBuffer();
+}
+{
+p=primary()
+{
+  buffer.append(p);
+  return buffer.toString();
+}
+|
+<LPAREN> exp = expression() <RPAREN>
+{
+  buffer.append("(" + exp + ")");
+  return buffer.toString();
+}
+}
+String primary():
+{
+Token t1;
+Token t2 = null;
+Token t3;
+Token t4;
+String primary;
+}
+{
+LOOKAHEAD(2)
+t1=<IDENTIFIER> t2=<OPERATOR> (t3=<IDENTIFIER> | t3=<OPERAND> )
+{
+String tmp = dealQuote(t3.image);
+switch (t2.image){
+    case "=":
+        primary = t1.image + ":" + tmp;
+        break;
+    case "!=":
+        primary = "NOT " + t1.image + ":" + tmp;
+        break;
+    default:
+        primary = t1.image + ":" + t2.image + tmp;
+        break;
+}
+return "(" + primary + ")";
+}
+|
+LOOKAHEAD(2)
+t1=<IDENTIFIER> <BETWEEN> (t3=<IDENTIFIER> | t3=<OPERAND>)<AND>(t4=<IDENTIFIER> | t4=<OPERAND> )
+{
+String operand1= dealQuote(t3.image);
+String operand2= dealQuote(t4.image);
+return "(" + t1.image + ":[" + operand1 + " TO " + operand2 + "])";
+}
+|
+LOOKAHEAD(3)
+t1=<IDENTIFIER> [t2=<NOT>]<IN>
+{
+  StringBuffer buffer = new StringBuffer();
+  if(null == t2 || t2.image.equals("")){
+    buffer.append(t1.image + " : ");
+  }else{
+    buffer.append("NOT " + t1.image + " : ");
+  }
+}
+<LPAREN>
+{ buffer.append("("); }
+(t3=<IDENTIFIER> | t3=<OPERAND>)
+{ buffer.append(dealQuote(t3.image)); }
+(
+<COMMA> (t3=<IDENTIFIER> | t3=<OPERAND>)
+{ buffer.append("," + dealQuote(t3.image)); }
+)*
+<RPAREN>
+{
+  buffer.append(")");
+  return buffer.toString();
+ }
+|
+LOOKAHEAD(3)
+t1=<IDENTIFIER> <IS>[t2=<NOT>]<NULL>
+{
+  if(null == t2 || t2.image.equals("")){
+     return "(NOT _exists_: " + t1.image + ")";
+    }else{
+      return "(_exists_: " + t1.image + ")";
+    }
+}
+}
