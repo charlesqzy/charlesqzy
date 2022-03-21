@@ -1,15 +1,23 @@
 # logical-exp-to-esquery
-使用Javacc 将逻辑表达式转化为Elasticsearch query_string，并查询结果
-javacc 7.0.10
-elasticsearch 6.4.3
-kibana 6.4.3
+使用Javacc 将逻辑表达式转化为Elasticsearch query_string，并查询结果  
+
+javacc 7.0.10  
+
+elasticsearch 6.4.3  
+
+kibana 6.4.3  
+
 
 # 注意
-javacc 从官网https://javacc.github.io/javacc/#download 下载Source (zip)后
-解压后的文件夹中，缺失target/javacc.jar
-因此需要手动下载javacc-7.0.10.jar 放入target/,并重命名为javacc.jar
+javacc 从官网https://javacc.github.io/javacc/#download 下载Source (zip)后  
+
+解压后的文件夹中，缺失target/javacc.jar  
+
+因此需要手动下载javacc-7.0.10.jar 放入target/,并重命名为javacc.jar  
+
 
 # 使用kibana 创建index template
+```
 POST _template/test-charlie-template
 {
   "template": "test-charlie-*",
@@ -50,8 +58,9 @@ POST _template/test-charlie-template
     }
   }
 }
-
+```
 # 使用kibana 插入一些数据
+```
 POST test-charlie-1/trx-info
 {
   "id":"trx-00001",
@@ -85,3 +94,4 @@ POST test-charlie-1/trx-info
   "city":"常州",
   "trx_amt":7898
 }
+```
