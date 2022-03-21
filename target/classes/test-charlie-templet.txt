@@ -1,9 +1,3 @@
-# logical-exp-to-esquery
-Javacc 7.0.10
-Elasticsearch 6.4.3
-QueryString query
-
-# 使用es templet
 POST _template/test-charlie-template
 {
   "template": "test-charlie-*",
