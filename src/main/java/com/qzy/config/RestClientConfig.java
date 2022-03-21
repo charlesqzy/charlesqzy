@@ -10,7 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+/**
+ * @author: Charlie Qzy
+ * @date: 2022/3/21
+ * @description:
+ * @version: 1.0.0
+ */
 @Configuration
 public class RestClientConfig {
 

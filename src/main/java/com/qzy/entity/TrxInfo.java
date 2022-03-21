@@ -1,5 +1,12 @@
 package com.qzy.entity;
 
+/**
+ * @author: Charlie Qzy
+ * @date: 2022/3/21
+ * @description:
+ * @version: 1.0.0
+ */
+
 public class TrxInfo {
     private String id;
     private String city;
