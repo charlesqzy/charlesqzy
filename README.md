@@ -4,6 +4,11 @@ javacc 7.0.10
 elasticsearch 6.4.3
 kibana 6.4.3
 
+# 注意
+javacc 从官网https://javacc.github.io/javacc/#download 下载Source (zip)后
+解压后的文件夹中，缺失target/javacc.jar
+因此需要手动下载javacc-7.0.10.jar 放入target/,并重命名为javacc.jar
+
 # 使用kibana 创建index template
 POST _template/test-charlie-template
 {
